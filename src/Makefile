@@ -1,4 +1,4 @@
-PREFIX=mipsel-openwrt-linux-
+#PREFIX=mipsel-openwrt-linux-
 
 CC=$(PREFIX)gcc
 #LD=$(PREFIX)ld

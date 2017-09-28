@@ -45,6 +45,7 @@ int send_tmp=0;
 
 
 int clidenFd;
+int Http_Socket_Fd;
 
 bool connect_error=false;
 
@@ -100,10 +101,10 @@ int main()
   signal(SIGCHLD,handle_sigchld);
   createNodelist();  //创建链表用于存储FD
   //串口初始化获取路径值设置串口以及远程连接端口
-  GetConfigValue("/etc/config/rs232" );
+  GetConfigValue("rs232" );
   //GetConfigValue("/home/dave/test/xmohe/src/rs232" );
   
-  printf("client ipport is %d\n",client_port);//本地端口
+  printf("client ipport is %d\n",client_port);//本地端口，现在就是http通信的端口
  // printf("server ipport is %d\n",ser_port);//远程端口
  // printf("the server ip is %s\n",ipaddr);
    /*声明epoll_event结构体的变量，ev用于注册事件，events
@@ -113,6 +114,8 @@ int main()
    的文件描述符，指定生成描述符的最大范围为256*/
   int epoll_instance=epoll_create(64);//size is unused nowadays
 
+  
+//其它设备监听的端口
   int  listenfd = socket(AF_INET,SOCK_STREAM,0);
    if(listenfd <0)
    {
@@ -123,7 +126,8 @@ int main()
    ev.data.fd=listenfd;//设置与要处理的事件相关的文件描述符
    ev.events=EPOLLIN|EPOLLET;//设置要处理的事件类型
    epoll_ctl(epoll_instance,EPOLL_CTL_ADD,listenfd,&ev);//注册epoll事件
-/*
+
+   /*
 本地服务器设置，绑定端口，如果是客户端直接读取远程的ip
 */
    struct sockaddr_in client_addr;
@@ -148,6 +152,48 @@ int main()
    } 
    ret = listen(listenfd,5);//backlog
    if(ret !=0)
+   {
+       perror("Error on listening");
+       return -1;
+   }
+   
+
+//HTTP用于连接的端口
+     int  http_socket_fd = socket(AF_INET,SOCK_STREAM,0);
+   if(http_socket_fd <0)
+   {
+      perror("error opening socket");
+      return -1;
+   }
+   setnonblocking(http_socket_fd);//把用于监听的http_socket_fd设置成非阻塞方式
+   ev.data.fd=http_socket_fd;//设置与要处理的事件相关的文件描述符
+   ev.events=EPOLLIN|EPOLLET;//设置要处理的事件类型
+   epoll_ctl(epoll_instance,EPOLL_CTL_ADD,http_socket_fd,&ev);//注册epoll事件
+   
+   /*
+本地服务器设置，绑定端口，如果是客户端直接读取远程的ip
+*/
+   struct sockaddr_in client_addr_http;
+   memset(&client_addr_http,0,sizeof(client_addr_http));
+   client_addr_http.sin_family = AF_INET;
+   client_addr_http.sin_addr.s_addr = INADDR_ANY;
+   //client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+   client_addr_http.sin_port = htons(8089);//本地端口，http连接端口
+   long opt_http = 1;
+   socklen_t sizeInt_len_http = sizeof(long);
+  if(setsockopt(http_socket_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&opt_http,sizeInt_len_http)==-1)
+  	{       
+  	perror("setsockopt_http");       
+	return -1;    
+	}
+  int ret_http = bind(http_socket_fd,(struct sockaddr*)&client_addr_http,sizeof(client_addr_http));
+   if(ret_http <0)
+   {
+      perror("Error on binding client_addr_http");
+      return -1;
+   } 
+   ret_http = listen(http_socket_fd,5);//backlog
+   if(ret_http !=0)
    {
        perror("Error on listening");
        return -1;
@@ -204,7 +250,7 @@ int main()
    	  		  epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
 			  printf("add %d to epoll\n",connfd);
 			  
-			clidenFd=connfd;
+			//clidenFd=connfd;
 			//info_data.socfd=connfd;
 			//printf("connect is %d\n,info_data.socfd");
 			//添加系统信息
@@ -213,6 +259,23 @@ int main()
 			clientnode->fd_data=connfd;
 			clientnode->pNext=NULL;
 			addNode(clientnode);
+   	  	}
+		else if(events[n_poll].data.fd==http_socket_fd)//HTTP监听端口连接
+   	  	{
+   	  		struct sockaddr_in cliaddr;
+   	  		uint32_t  len = sizeof(cliaddr);
+   	  		int connfd=accept(http_socket_fd,(struct sockaddr*)&cliaddr,&len);
+   	  		printf("connection from host %s,port %d,sockfd is %d\n",
+            inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port),connfd);
+   	  		setnonblocking(connfd);
+   	  		  
+   	  		  ev.data.fd=connfd;//设置用于读操作的文件描述符
+   	  		  ev.events=EPOLLIN|EPOLLET;//设置用于注册的读操作事件
+   	  		  epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
+			  printf("add %d to epoll\n",connfd);
+			  
+			Http_Socket_Fd=connfd;
+
    	  	}
 		else if(events[n_poll].events&EPOLLIN)/*读事件*/
 			if(events[n_poll].data.fd==serial_fd)
@@ -229,7 +292,7 @@ int main()
 					memset(serial_buf,0,sizeof(serial_buf));
 					read_cont=0;
 				}
-   	  		else{ 		
+   	  		else{ 
 					//判断是否是SOCKET事件
 					int sockfd=events[n_poll].data.fd;
 					char cliend_buf[128];//接收数据缓存放置SOCKET数据
@@ -241,19 +304,31 @@ int main()
    	  		   	  			ev.data.fd=sockfd;
    	  		  	  			ev.events=EPOLLIN|EPOLLET;
    	  		   	 			epoll_ctl(epoll_instance,EPOLL_CTL_DEL,sockfd,&ev);
+							if(sockfd==Http_Socket_Fd){
+								
+								}
+							else {
 							if(deleteNode(sockfd))
 				 			printf("delete the list\n");
+								}
    	  		   	  			close(sockfd);
    	  		  	  			printf("del client\n");
 							memset(cliend_buf,0,sizeof(cliend_buf));
    	  		 			 }
 					else{	
 				 		 //处理数据函
-				  			recv_cnt=write(serial_fd,cliend_buf,sockread_len);
+				 		 if(sockfd==Http_Socket_Fd)
+				 		 	{
+				 		 	printf("rcv socket is httpserver data %d\n",sockfd);
+				 		 	}
+						 else{
+						 	//接收到其它socket数据
+				  			recv_cnt=write(Http_Socket_Fd,cliend_buf,sockread_len);
 						 	printf("rcv socket is %d\n",sockfd);
 							printf("rcv socket:%s the counut is %d\n",cliend_buf,recv_cnt);
 							memset(cliend_buf,0,sizeof(cliend_buf));
 							recv_cnt=0;
+						 	}
    	  		 			 }
    	     		}
    		} 
