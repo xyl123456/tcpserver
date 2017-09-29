@@ -1,6 +1,5 @@
-#include<stdio.h>
-#include<stdlib.h>
 #include "list.h"
+extern Http_Socket_Fd;
 //创建链表，头结点data=0;pNext=null
 
 bool createNodelist()
@@ -11,6 +10,7 @@ bool createNodelist()
 		}
 	else {
 		head->fd_data =0;
+		memset(head->data_buf,0,19);
 		head->pNext = NULL;
 		return true;
 		}
@@ -29,7 +29,7 @@ bool  addNode(Node * node)
 		p = p->pNext;
 		}
 	q->pNext = node;
-	node ->pNext = NULL;	
+	node ->pNext = NULL;
 	return true;
 }
 
@@ -39,13 +39,7 @@ bool deleteNode(int index)
 	if(NULL == head){
 		return false;
 		}
-	/*Node* p = head->pNext;
-	int length = 0;
-	while(NULL !=p){
-		length++;
-		p = p->pNext;
-		}
-		*/		
+	
 	Node* perior = head;
 	Node* q = head->pNext;
 	while((q!=NULL)&&(q->fd_data != index))
@@ -55,6 +49,7 @@ bool deleteNode(int index)
 		}
 	if(q->fd_data == index)
 		{
+		memset(q->data_buf,0,updata_length);
 		if(q->pNext == NULL)
 			{
 			perior->pNext = NULL;
@@ -134,3 +129,38 @@ void destroyNodeList()
 	head = NULL;
 }
 
+//更新节点数据
+bool updataNode(int index,unsigned char buf[])
+{
+	if(NULL == head){
+		return false;
+		}
+	Node* perior = head;
+	Node* q = head->pNext;
+	while((q!=NULL)&&(q->fd_data != index))
+		{
+		perior = q;
+		q = q->pNext;
+		}
+	if(q->fd_data == index)
+		{
+		memcpy(q->data_buf,buf,updata_length);
+		//write(Http_Socket_Fd,q->data_buf,updata_length);
+		return true;
+		}
+}
+
+bool sendAllNode(int fd)
+{
+	if(NULL == head){
+		return false;
+		}
+	Node* q = head->pNext;
+	while(q!=NULL)
+		{
+		write(fd,q->data_buf,updata_length);
+		q = q->pNext;
+		}
+		
+	return true;
+}

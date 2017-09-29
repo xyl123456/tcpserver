@@ -11,12 +11,14 @@
 #include <pthread.h>
 #include <termios.h>
 #include <errno.h>
+#include "types.h"
 
 #define  true     1
 #define  false    0
 
 typedef struct node{
 	int fd_data;
+	unsigned char data_buf[updata_length];
 	struct node* pNext;
 }Node;
 
@@ -24,5 +26,7 @@ Node *head ;
 extern bool createNodelist();
 extern bool  addNode(Node * node);
 extern bool deleteNode(int index);
+extern bool updataNode(int index,unsigned char buf[]);
+extern bool sendAllNode(int fd);
 
 #endif

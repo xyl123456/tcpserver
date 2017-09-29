@@ -12,12 +12,13 @@
 #include <sys/wait.h>
 #include "getcfg.h"
 #include "list.h"
+#include "types.h"
 
 //获取目标字符串后的数字
-int GetValue( char* CFGBuffer, int Buflen, char *pKeyName )
+int GetValue( unsigned char* CFGBuffer, int Buflen, unsigned char *pKeyName )
 {
 	int   i1, i2, len1, len2;
-	char pStr[20];
+	unsigned char pStr[20];
 
 	len1 = strlen( pKeyName );
 
@@ -48,11 +49,11 @@ int GetValue( char* CFGBuffer, int Buflen, char *pKeyName )
 }
 
 /*获取目标后边的字符串，函数返回字符指针*/
-void  GetString( char* CFGBuffer, int Buflen, char *pKeyName )
+void  GetString( unsigned char* CFGBuffer, int Buflen,unsigned char *pKeyName )
 {
 	int   i1, i2, len1, len2;
 	int   len_temp;
-	char pStr[25];
+	unsigned char pStr[25];
 
 	len1 = strlen( pKeyName );
 
@@ -110,11 +111,11 @@ void  GetString( char* CFGBuffer, int Buflen, char *pKeyName )
 
 
 /*获取目标后边的字符串，函数返回字符指针*/
-void  GetDNS_String( char* CFGBuffer, int Buflen, char *pKeyName )
+void  GetDNS_String( unsigned char* CFGBuffer, int Buflen,unsigned char *pKeyName )
 {
 	int   i1, i2, len1, len2;
 	int   len_temp;
-	char pStr[25];
+	unsigned char pStr[25];
 
 	len1 = strlen( pKeyName );
 
@@ -208,11 +209,11 @@ int GetCFGValue( char* CFGBuffer, int Buflen, char *pKeyName, char *pItemName )
 }
 
 
-void GetConfigValue( char* FileName)
+void GetConfigValue( unsigned char* FileName)
 {
 	FILE*	fp;
-    char    Buffer[1000], str[100];
-	char 	rs232_buf;
+    unsigned char    Buffer[1000], str[100];
+	unsigned char 	rs232_buf;
 	int		nBytes;
 	int		baud;
 	int 	tmp_port;
@@ -297,7 +298,7 @@ int iscorrectcfg(CONFIG_INFO* pConfigInfo)
 */
 
 //串口数据处理函数
-void serialdata_handle(char buff[],int len)
+void serialdata_handle(unsigned char buff[],int len)
 {
 	int send_fd;
 	int k;
@@ -314,7 +315,6 @@ void serialdata_handle(char buff[],int len)
 	free(p);
 	return;
 }
-
 
 
 void handle_sigchld(int sig)
@@ -355,4 +355,5 @@ int ComRd(int portNo,char buf[],int maxCnt,int Timeout)
 	return actualRead;
 }
 */
+
 

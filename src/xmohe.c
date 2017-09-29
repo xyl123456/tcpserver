@@ -21,20 +21,20 @@
 #include "serial.h"
 #include "getcfg.h"
 #include "list.h"
+#include "types.h"
 
 
 
-int sockread_len;//客户端读取的字节数
 
-char ipaddr[16];//用于存放获取的Ip地址
-char dns_addr[50];//用于存放存放远程域名地址
+unsigned char ipaddr[16];//用于存放获取的Ip地址
+unsigned char dns_addr[50];//用于存放存放远程域名地址
 int ser_port;//远程端口
 int client_port;//本地端口
-char RS232_BUF;//串口端口
+unsigned char RS232_BUF;//串口端口
 int RS232_BAUD;//串口波特率
 
 int serial_fd;//串口FD
-int recv_cnt=0;
+
 bool uart_flag=0;
 bool read_flag=0;
 
@@ -74,7 +74,7 @@ void Sleep_ms(int ms)
 }  
 void* SerialThread(){
 	int read_cont;//读取到串口的字节数
-    	char serial_buf[128];//用于存放串口的数据
+    	unsigned char serial_buf[128];//用于存放串口的数据
     	int serial_read_cnt=0;	
 	int read_flag=0;
 	int serial_cnt=0;
@@ -183,19 +183,19 @@ int main()
    socklen_t sizeInt_len_http = sizeof(long);
   if(setsockopt(http_socket_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&opt_http,sizeInt_len_http)==-1)
   	{       
-  	perror("setsockopt_http");       
+  	perror("setsockopt_http\n");       
 	return -1;    
 	}
   int ret_http = bind(http_socket_fd,(struct sockaddr*)&client_addr_http,sizeof(client_addr_http));
    if(ret_http <0)
    {
-      perror("Error on binding client_addr_http");
+      perror("Error on binding client_addr_http\n");
       return -1;
    } 
    ret_http = listen(http_socket_fd,5);//backlog
    if(ret_http !=0)
    {
-       perror("Error on listening");
+       perror("Error on listening\n");
        return -1;
    }
 
@@ -230,7 +230,7 @@ int main()
    	  if(nfound==0)
    	  {
    	  	//printf(".");
-   	  	fflush(stdout);
+   	  	//fflush(stdout);
 		continue;
    	  }
 	int n_poll;
@@ -248,7 +248,7 @@ int main()
    	  		  ev.data.fd=connfd;//设置用于读操作的文件描述符
    	  		  ev.events=EPOLLIN|EPOLLET;//设置用于注册的读操作事件
    	  		  epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
-			  printf("add %d to epoll\n",connfd);
+			  //printf("add %d to epoll\n",connfd);
 			  
 			//clidenFd=connfd;
 			//info_data.socfd=connfd;
@@ -265,24 +265,25 @@ int main()
    	  		struct sockaddr_in cliaddr;
    	  		uint32_t  len = sizeof(cliaddr);
    	  		int connfd=accept(http_socket_fd,(struct sockaddr*)&cliaddr,&len);
-   	  		printf("connection from host %s,port %d,sockfd is %d\n",
+   	  		printf("httpconnect from host %s,port %d,sockfd is %d \n",
             inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port),connfd);
    	  		setnonblocking(connfd);
    	  		  
    	  		  ev.data.fd=connfd;//设置用于读操作的文件描述符
    	  		  ev.events=EPOLLIN|EPOLLET;//设置用于注册的读操作事件
    	  		  epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
-			  printf("add %d to epoll\n",connfd);
+			  //printf("add %d to epoll\n",connfd);
 			  
 			Http_Socket_Fd=connfd;
 
    	  	}
 		else if(events[n_poll].events&EPOLLIN)/*读事件*/
+			{
 			if(events[n_poll].data.fd==serial_fd)
 				{
 				Sleep_ms(500);
 				int read_cont;//读取到串口的字节数
-    				char serial_buf[128];//用于存放串口的数据
+    			unsigned char serial_buf[128];//用于存放串口的数据
 				memset(serial_buf,0,sizeof(serial_buf));
 				read_cont=read(serial_fd,serial_buf,sizeof(serial_buf));
 				        //serialdata_handle(serial_buf,read_cont);
@@ -296,7 +297,7 @@ int main()
 					//判断是否是SOCKET事件
 					int sockfd=events[n_poll].data.fd;
 					char cliend_buf[128];//接收数据缓存放置SOCKET数据
-					recv_cnt=0;
+					int sockread_len;//客户端读取的字节数
    	  				memset(cliend_buf,0,sizeof(cliend_buf));
 					sockread_len=read(sockfd,cliend_buf,sizeof(cliend_buf));
    	  				if(sockread_len<=0)
@@ -317,22 +318,27 @@ int main()
    	  		 			 }
 					else{	
 				 		 //处理数据函
+				 		 
 				 		 if(sockfd==Http_Socket_Fd)
 				 		 	{
-				 		 	printf("rcv socket is httpserver data %d\n",sockfd);
+				 		 	//printf("rcv socket is httpserver data %d\n",sockfd);
+				 		 	Httpdata_process(cliend_buf,sockread_len);
+							sockread_len=0;
+							memset(cliend_buf,0,sizeof(cliend_buf));
 				 		 	}
 						 else{
 						 	//接收到其它socket数据
-				  			recv_cnt=write(Http_Socket_Fd,cliend_buf,sockread_len);
-						 	printf("rcv socket is %d\n",sockfd);
-							printf("rcv socket:%s the counut is %d\n",cliend_buf,recv_cnt);
+						 	Devdata_process(sockfd,cliend_buf,sockread_len);
+				  			//recv_cnt=write(Http_Socket_Fd,cliend_buf,sockread_len);
+						 	//printf("rcv socket is %d\n",sockfd);
+							//printf("rcv socket:%s the counut is %d\n",cliend_buf,recv_cnt);
+							sockread_len=0;
 							memset(cliend_buf,0,sizeof(cliend_buf));
-							recv_cnt=0;
 						 	}
    	  		 			 }
    	     		}
+			}
    		} 
     	}
-   pthread_join(Serial_ID,NULL);
    return 0;
 }
