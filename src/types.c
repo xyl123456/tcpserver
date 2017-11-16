@@ -13,9 +13,9 @@ extern int Http_Socket_Fd;
 //解析数据，将数据添加到对应的fd中
 void Devdata_process(int fd,unsigned char buf[],int len){
 	int data_len=len;
-	unsigned char cmdbuf[3]={0x0E,0x00,0x00};
-	//数据格式总长度25,封装后的数据是23,省去了校验位
-	if(data_len==25)
+	unsigned char cmdbuf[3]={0x0C,0x00,0x00};
+	//数据格式总长度23,封装后的数据是21,省去了校验位
+	if(data_len==23)
 		{
 		memcpy(recvdata_list.data_buf,buf,data_len);
 		memcpy(datalist.data_core.Head_byte,recvdata_list.data_core.Head_byte,2);
