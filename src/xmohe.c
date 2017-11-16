@@ -24,8 +24,6 @@
 #include "types.h"
 
 
-
-
 unsigned char ipaddr[16];//用于存放获取的Ip地址
 unsigned char dns_addr[50];//用于存放存放远程域名地址
 int ser_port;//远程端口
@@ -178,7 +176,7 @@ int main()
    client_addr_http.sin_family = AF_INET;
    client_addr_http.sin_addr.s_addr = INADDR_ANY;
    //client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-   client_addr_http.sin_port = htons(8089);//本地端口，http连接端口
+   client_addr_http.sin_port = htons(8000);//本地端口，http连接端口
    long opt_http = 1;
    socklen_t sizeInt_len_http = sizeof(long);
   if(setsockopt(http_socket_fd,SOL_SOCKET,SO_REUSEADDR,(char *)&opt_http,sizeInt_len_http)==-1)
@@ -244,11 +242,11 @@ int main()
    	  		printf("connection from host %s,port %d,sockfd is %d\n",
             inet_ntoa(cliaddr.sin_addr),ntohs(cliaddr.sin_port),connfd);
    	  		setnonblocking(connfd);
-   	  		  
-   	  		  ev.data.fd=connfd;//设置用于读操作的文件描述符
-   	  		  ev.events=EPOLLIN|EPOLLET;//设置用于注册的读操作事件
-   	  		  epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
-			  //printf("add %d to epoll\n",connfd);
+			
+   	  		ev.data.fd=connfd;//设置用于读操作的文件描述符
+   	  		ev.events=EPOLLIN|EPOLLET;//设置用于注册的读操作事件
+   	  		epoll_ctl(epoll_instance,EPOLL_CTL_ADD,connfd,&ev);//注册ev事件
+			//printf("add %d to epoll\n",connfd);
 			  
 			//clidenFd=connfd;
 			//info_data.socfd=connfd;
@@ -286,9 +284,9 @@ int main()
     			unsigned char serial_buf[128];//用于存放串口的数据
 				memset(serial_buf,0,sizeof(serial_buf));
 				read_cont=read(serial_fd,serial_buf,sizeof(serial_buf));
-				        //serialdata_handle(serial_buf,read_cont);
-				        int write_cnd=0;
-				        write_cnd= write(clidenFd,serial_buf,read_cont);
+				//serialdata_handle(serial_buf,read_cont);
+				int write_cnd=0;
+				write_cnd= write(clidenFd,serial_buf,read_cont);
 					printf("rev count is %d\n",read_cont);
 					memset(serial_buf,0,sizeof(serial_buf));
 					read_cont=0;
@@ -306,14 +304,13 @@ int main()
    	  		  	  			ev.events=EPOLLIN|EPOLLET;
    	  		   	 			epoll_ctl(epoll_instance,EPOLL_CTL_DEL,sockfd,&ev);
 							if(sockfd==Http_Socket_Fd){
-								
+								//服务器端不处理
 								}
 							else {
 							if(deleteNode(sockfd))
 				 			printf("delete the list\n");
 								}
    	  		   	  			close(sockfd);
-   	  		  	  			printf("del client\n");
 							memset(cliend_buf,0,sizeof(cliend_buf));
    	  		 			 }
 					else{	
@@ -329,9 +326,6 @@ int main()
 						 else{
 						 	//接收到其它socket数据
 						 	Devdata_process(sockfd,cliend_buf,sockread_len);
-				  			//recv_cnt=write(Http_Socket_Fd,cliend_buf,sockread_len);
-						 	//printf("rcv socket is %d\n",sockfd);
-							//printf("rcv socket:%s the counut is %d\n",cliend_buf,recv_cnt);
 							sockread_len=0;
 							memset(cliend_buf,0,sizeof(cliend_buf));
 						 	}

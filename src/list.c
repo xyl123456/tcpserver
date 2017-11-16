@@ -1,5 +1,14 @@
 #include "list.h"
+#include "cJSON.h"
 extern Http_Socket_Fd;
+
+
+extern Data_list_t datalist;//节点存储的数据格式
+extern Data_up_t recvdata_list;
+extern Http_cmd_list_t httpdata_list;
+extern Http_getdata_list_t  httpgetdata_list;
+
+
 //创建链表，头结点data=0;pNext=null
 
 bool createNodelist()
@@ -156,11 +165,98 @@ bool sendAllNode(int fd)
 		return false;
 		}
 	Node* q = head->pNext;
+	Data_list_t nod_datalist;
+	
+	//创建一个空白的JSON对象
+	cJSON *json = cJSON_CreateObject();
+	//创建一个数组到JSON对象中
+	cJSON *array = NULL;
+	cJSON_AddItemToObject(json,"dev_ids",array=cJSON_CreateArray());
 	while(q!=NULL)
 		{
-		write(fd,q->data_buf,updata_length);
+		memcpy(nod_datalist.data_buf,q->data_buf,updata_length);
+		int devid=bytesToInt(nod_datalist.data_core.MAC_addr,4);
+		
+		//printf("the mac is:%d\n",devid);
+		char devidstring[5];
+		int_to_string(devid,devidstring);
+		//printf("the string is:%s\n",devidstring);
+		cJSON_AddItemToArray(array,cJSON_CreateString(devidstring));
 		q = q->pNext;
 		}
-		
+	char *sendbuf = cJSON_Print(json);
+	write(fd,sendbuf,strlen(sendbuf));
+	
+	cJSON_Delete(json);
 	return true;
+}
+
+//find by device_mac
+bool getdataNode(unsigned char buf[])
+{
+
+	if(NULL == head){
+		return false;
+		}
+	Node* perior = head;
+	Node* q = head->pNext;
+	Data_list_t nod_datalist;
+
+	while(q!=NULL)
+		{
+		memcpy(nod_datalist.data_buf,q->data_buf,updata_length);
+		if(memcmp(nod_datalist.data_core.MAC_addr,buf,4)==0){
+
+		//创建一个空白的JSON对象
+		cJSON *json = cJSON_CreateObject();
+			
+			//返回设备状态信息
+			int devid=bytesToInt(nod_datalist.data_core.MAC_addr,4);
+			char devidstring[5];
+			int_to_string(devid,devidstring);
+			
+			cJSON_AddItemToObject(json,"dev_id",cJSON_CreateString(devidstring));
+
+			//创建一个数组到JSON对象中
+			cJSON *array = NULL;
+			cJSON_AddItemToObject(json,"datas",array=cJSON_CreateArray());
+			//数组上添加对象
+			cJSON *obj = NULL;
+			cJSON_AddItemToArray(array,obj=cJSON_CreateObject());
+			
+			//data value
+			int pm25=bytesToInt(nod_datalist.data_core.PM25, 3);
+			int pm03=bytesToInt(nod_datalist.data_core.PM03, 3);
+			int tem=bytesToInt(nod_datalist.data_core.TEM, 3);
+			int hum=bytesToInt(nod_datalist.data_core.HUM, 3);
+			int cmd=bytesToInt(nod_datalist.data_core.CMD,3);
+			char pm25string[5];
+			char pm03string[5];
+			char temstring[5];
+			char humstring[5];
+			char cmdstring[5];
+			int_to_string(pm25,pm25string);
+			int_to_string(pm03,pm03string);
+			int_to_string(tem,temstring);
+			int_to_string(hum,humstring);
+			int_to_string(cmd,cmdstring);
+			cJSON_AddItemToObject(obj,"PM25",cJSON_CreateString(pm25string));
+			cJSON_AddItemToObject(obj,"PM03",cJSON_CreateString(pm03string));
+			cJSON_AddItemToObject(obj,"TEM",cJSON_CreateString(temstring));
+			cJSON_AddItemToObject(obj,"HUM",cJSON_CreateString(humstring));
+			cJSON_AddItemToObject(obj,"CMD",cJSON_CreateString(cmdstring));
+			
+			char *sendbuf = cJSON_Print(json);
+			write(Http_Socket_Fd,sendbuf,strlen(sendbuf));
+	
+			cJSON_Delete(json);
+			break;
+			}
+		else{
+		perior = q;
+		q = q->pNext;
+			}
+		}
+
+	
 }

@@ -7,7 +7,8 @@
 Data_list_t datalist;
 Data_up_t recvdata_list;
 Http_cmd_list_t httpdata_list;
-
+Http_getdata_list_t  httpgetdata_list;
+	
 extern int Http_Socket_Fd;
 //解析数据，将数据添加到对应的fd中
 void Devdata_process(int fd,unsigned char buf[],int len){
@@ -39,20 +40,70 @@ void Httpdata_process(unsigned char buf[],int len)
 	if(data_len==httpcmd_length)
 		{
 		memcpy(httpdata_list.data_buf,buf,data_len);
-		switch(httpdata_list.data_core.cmd_type){
-			case 0xAA:
-				//拉取所有设备信息，发送所有节点信息给HTTP服务端
-				sendAllNode(Http_Socket_Fd);
-				break;
-			case 0xAB:
-				//控制设备信息
-				break;
-			default:
-				break;
+		if(httpdata_list.data_core.cmd_type==0xAA){
+			sendAllNode(Http_Socket_Fd);
 			}
-		
 		}
 	else{
+		if(data_len=httpgetdata_length)
+			{
+			//get data 获取单个设备信息
+			memcpy(httpgetdata_list.data_buf,buf,data_len);		
+			getdataNode(httpgetdata_list.data_core.dev_data);
+			}
 		}
+}
+
+void int_to_string (int n,char s[])
+{
+
+		if(n/1000!=0){
+			s[0]=n/1000+'0';
+			s[1]=n%1000/100+'0';
+			s[2]=n%100/10+'0';
+			s[3]=n%10+'0';
+			s[4]='\0';
+			}
+		else{
+		if(n/100!=0){
+			s[0]=n/100+'0';
+			s[1]=n%100/10+'0';
+			s[2]=n%10+'0';
+			s[3]='\0';
+			}else{
+			if(n/10!=0)
+				{
+				s[0]=n/10+'0';
+				s[1]=n%10+'0';
+				s[2]='\0';
+				}
+			else
+				{
+				s[0]=n%10+'0';
+				s[1]='\0';
+				}
+			 }
+			}	
+		
+}
+
+int bytesToInt(unsigned char buf[], int offset)
+{ 
+	int value;    
+	if(offset==4)
+		{
+  	value = (int) ((buf[offset-1] & 0xFF)   
+         | ((buf[offset-2] & 0xFF)<<8) 
+         |((buf[offset-3] & 0xFF)<<16)
+         |((buf[offset-4] & 0xFF)<<24));  
+    return value; 
+		}
+	if(offset==3)
+		{
+		value = (int) ((buf[offset-1] & 0xFF)   
+         | ((buf[offset-2] & 0xFF)<<8));
+    return value; 
+		}
+
 }
 

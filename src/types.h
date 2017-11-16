@@ -1,7 +1,11 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
-#define updata_length      23  //updata to http data_length,and list save data_length
-#define httpcmd_length     11//
+
+#define updata_length      	23  //updata to http data_length,and list save data_length
+#define httpcmd_length     	11//
+#define httpgetdata_length  	14//get data length
+
+//node list
 typedef union Data_list
 {
    unsigned char data_buf[updata_length];
@@ -18,6 +22,7 @@ typedef union Data_list
    }data_core;
 }Data_list_t;
 
+//tcp dev send data
 typedef union Data_up
 {
    unsigned char data_buf[25];
@@ -51,7 +56,26 @@ typedef union Http_cmd_list
    }data_core;
 }Http_cmd_list_t;
 
+//HTTP 获取单个设备信息
+typedef union Http_getdata_list
+{
+   unsigned char data_buf[httpgetdata_length];
+   struct http_getdata_list_t
+   {
+   	   unsigned char Head_byte[2];//0xEB 0x90
+       unsigned char data_length[2];   //数据长度
+       unsigned char cmd_type;//0x0A
+	   unsigned char dev_data[4];
+	   unsigned char data_type;//设备的类型:是二氧化碳，温度湿度，甲醛等等
+       unsigned char Check_code[2];//校验码
+       unsigned char Tial[2];//0x0D 0x0A
+   }data_core;
+}Http_getdata_list_t;
+
 extern void Httpdata_process(unsigned char buf[],int len);
 extern void Devdata_process(int fd,unsigned char buf[],int len);
+
+extern void int_to_string (int n, char s[]);
+extern int bytesToInt(unsigned char buf[], int offset);
 
 #endif
