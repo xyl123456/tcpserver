@@ -192,9 +192,8 @@ bool sendAllNode(int fd)
 }
 
 //find by device_mac
-bool getdataNode(unsigned char buf[])
+bool getdataNode(unsigned char buf[],unsigned char type)
 {
-
 	if(NULL == head){
 		return false;
 		}
@@ -223,32 +222,87 @@ bool getdataNode(unsigned char buf[])
 			//数组上添加对象
 			cJSON *obj = NULL;
 			cJSON_AddItemToArray(array,obj=cJSON_CreateObject());
-			
-			//data value
-			int pm25=bytesToInt(nod_datalist.data_core.PM25, 3);
-			int pm03=bytesToInt(nod_datalist.data_core.PM03, 3);
-			int tem=bytesToInt(nod_datalist.data_core.TEM, 3);
-			int hum=bytesToInt(nod_datalist.data_core.HUM, 3);
-			int cmd=bytesToInt(nod_datalist.data_core.CMD,3);
-			char pm25string[5];
-			char pm03string[5];
-			char temstring[5];
-			char humstring[5];
-			char cmdstring[5];
-			int_to_string(pm25,pm25string);
-			int_to_string(pm03,pm03string);
-			int_to_string(tem,temstring);
-			int_to_string(hum,humstring);
-			int_to_string(cmd,cmdstring);
-			cJSON_AddItemToObject(obj,"PM25",cJSON_CreateString(pm25string));
-			cJSON_AddItemToObject(obj,"PM03",cJSON_CreateString(pm03string));
-			cJSON_AddItemToObject(obj,"TEM",cJSON_CreateString(temstring));
-			cJSON_AddItemToObject(obj,"HUM",cJSON_CreateString(humstring));
-			cJSON_AddItemToObject(obj,"CMD",cJSON_CreateString(cmdstring));
-			
+
+			switch(type){
+				case 0xAA:
+						{
+						int pm25=bytesToInt(nod_datalist.data_core.PM25, 3);
+						int tem=bytesToInt(nod_datalist.data_core.TEM, 3);
+						int hum=bytesToInt(nod_datalist.data_core.HUM, 3);
+						int co2=bytesToInt(nod_datalist.data_core.CO2, 3);
+						int tvoc=bytesToInt(nod_datalist.data_core.TVOC,3);
+						int cmd=bytesToInt(nod_datalist.data_core.CMD,3);
+						char pm25string[5];
+						char temstring[5];
+						char humstring[5];
+						char co2string[5];
+						char tvocstring[5];
+						char cmdstring[5];
+						int_to_string(pm25,pm25string); 
+						int_to_string(tem,temstring);
+						int_to_string(hum,humstring);
+						int_to_string(co2,co2string);
+						int_to_string(tvoc,tvocstring);
+						int_to_string(cmd,cmdstring);
+						cJSON_AddItemToObject(obj,"PM25",cJSON_CreateString(pm25string));
+						cJSON_AddItemToObject(obj,"TEM",cJSON_CreateString(temstring));
+						cJSON_AddItemToObject(obj,"HUM",cJSON_CreateString(humstring));
+						cJSON_AddItemToObject(obj,"CO2",cJSON_CreateString(co2string));
+						cJSON_AddItemToObject(obj,"TVOC",cJSON_CreateString(tvocstring));
+						cJSON_AddItemToObject(obj,"CMD",cJSON_CreateString(cmdstring));	
+						//所有信息都要上传显示
+					}
+					break;
+				case 0x21:
+					{
+						int tem=bytesToInt(nod_datalist.data_core.TEM, 3);
+						int hum=bytesToInt(nod_datalist.data_core.HUM, 3);
+						char temstring[5];
+						char humstring[5];
+						int_to_string(tem,temstring);
+						int_to_string(hum,humstring);
+						cJSON_AddItemToObject(obj,"TEM",cJSON_CreateString(temstring));
+						cJSON_AddItemToObject(obj,"HUM",cJSON_CreateString(humstring));
+						//温度、湿度信息
+					}
+					break;
+				case 0x22:
+						{
+						int pm25=bytesToInt(nod_datalist.data_core.PM25, 3);
+						char pm25string[5];
+						int_to_string(pm25,pm25string);
+						cJSON_AddItemToObject(obj,"PM25",cJSON_CreateString(pm25string));	
+					}
+					break;
+				case 0x23:
+						{
+					    int co2=bytesToInt(nod_datalist.data_core.PM25, 3);
+						char co2string[5];
+						int_to_string(co2,co2string);
+						cJSON_AddItemToObject(obj,"CO2",cJSON_CreateString(co2string));
+					}
+					break;
+				case 0x24:
+						{
+						int tvoc=bytesToInt(nod_datalist.data_core.TVOC,3);
+						char tvocstring[5];
+						int_to_string(tvoc,tvocstring);
+						cJSON_AddItemToObject(obj,"TVOC",cJSON_CreateString(tvocstring));
+					}
+					break;
+				case 0x25:
+						{
+						int cmd=bytesToInt(nod_datalist.data_core.CMD,3);
+						char cmdstring[5];
+						int_to_string(cmd,cmdstring);
+						cJSON_AddItemToObject(obj,"CMD",cJSON_CreateString(cmdstring));	
+					}
+					break;
+				default :
+					break;
+				}
 			char *sendbuf = cJSON_Print(json);
 			write(Http_Socket_Fd,sendbuf,strlen(sendbuf));
-	
 			cJSON_Delete(json);
 			break;
 			}
@@ -257,6 +311,4 @@ bool getdataNode(unsigned char buf[])
 		q = q->pNext;
 			}
 		}
-
-	
 }

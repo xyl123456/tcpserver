@@ -1,7 +1,7 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
-#define updata_length      	14  //updata to http data_length,and list save data_length
+#define updata_length      	22  //updata to http data_length,and list save data_length
 #define httpcmd_length     	11//
 #define httpgetdata_length  	14//get data length
 
@@ -11,31 +11,32 @@ typedef union Data_list
    unsigned char data_buf[updata_length];
    struct data_list_t
    {
-       unsigned char MAC_addr[4];   //设备地址 
-       unsigned char PM25[2];//第一个字节0x01,后两个是数据，数据为整数
-       unsigned char TEM[2];//第一个字节0x03,后两个是数据,数据为1000+数据准换16
-	unsigned char HUM[2];//第一个字节0x04,后两个是数据,数据为1000+数据准换16
-	unsigned char CO2[2];
-	unsigned char TVOC[2];
-       //unsigned char CMD[2];//第一个字节是0x0E,后面是数据，控制设备状态
+   	unsigned char MAC_addr[4];   //设备地址 
+    unsigned char PM25[3];//第一个字节0x01,后两个是数据，数据为整数
+    unsigned char TEM[3];//第一个字节0x03,后两个是数据,数据为1000+数据准换16
+	unsigned char HUM[3];//第一个字节0x04,后两个是数据,数据为1000+数据准换16
+	unsigned char CO2[3];
+	unsigned char TVOC[3];
+    unsigned char CMD[3];//第一个字节是0x01,后面是数据，控制设备状态，风速档位
    }data_core;
 }Data_list_t;
 
 //检测类数据周期上报信息
 typedef union Data_up
 {
-   unsigned char data_buf[23];
+   unsigned char data_buf[31];
    struct data_up_t
    {
        unsigned char Head_byte[2];//0xEB 0x90
        unsigned char Data_length[2];//0x00 0x17
        unsigned char Data_type; //数据的类型0x0C
        unsigned char MAC_addr[4];   //设备地址 
-       unsigned char PM25[2];//第一个是0x08,后面是数据
-       unsigned char TEM[2];//第一个字节0x06,后面是数据,温度通过加100，为了算零下温度
-       unsigned char HUM[2];//第一个字节0x07,后面是数据
-       unsigned char CO2[2];//0x09,
-	unsigned char TVOC[2];//0x0A
+       unsigned char PM25[3];//第一个是0x08,后面是数据
+       unsigned char TEM[3];//第一个字节0x06,后面是数据,温度通过加100，为了算零下温度
+       unsigned char HUM[3];//第一个字节0x07,后面是数据
+       unsigned char CO2[3];//0x09,
+	   unsigned char TVOC[3];//0x0A
+	   unsigned char CMD[3];//第一个字节是0x01,后面是风速状态
        unsigned char Check_code[2];//校验码，除去包头和包尾所有字节的累加和
        unsigned char Tial[2];//0x0D 0x0A
    }data_core;

@@ -28,7 +28,7 @@ extern bool  addNode(Node * node);
 extern bool deleteNode(int index);
 extern bool updataNode(int index,unsigned char buf[]);
 extern bool sendAllNode(int fd);
-extern bool getdataNode(unsigned char buf[]);
+extern bool getdataNode(unsigned char buf[],unsigned char type);
 int bytesToInt(unsigned char buf[], int offset);
 
 #endif

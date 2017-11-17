@@ -4,8 +4,8 @@
 #include "types.h"
 
 
-Data_list_t datalist;
-Data_up_t recvdata_list;
+Data_list_t datalist;//节点存储数据
+Data_up_t recvdata_list;//数据上报格式
 Http_cmd_list_t httpdata_list;
 Http_getdata_list_t  httpgetdata_list;
 	
@@ -13,19 +13,18 @@ extern int Http_Socket_Fd;
 //解析数据，将数据添加到对应的fd中
 void Devdata_process(int fd,unsigned char buf[],int len){
 	int data_len=len;
-	unsigned char cmdbuf[3]={0x0C,0x00,0x00};
-	//数据格式总长度23,封装后的数据是21,省去了校验位
-	if(data_len==23)
+	//
+	if((data_len==31)&&(buf[4]==0x0C))
 		{
 		memcpy(recvdata_list.data_buf,buf,data_len);
-		memcpy(datalist.data_core.Head_byte,recvdata_list.data_core.Head_byte,2);
 		memcpy(datalist.data_core.MAC_addr,recvdata_list.data_core.MAC_addr,4);
 		memcpy(datalist.data_core.PM25,recvdata_list.data_core.PM25,3);
-		memcpy(datalist.data_core.PM03,recvdata_list.data_core.PM03,3);
 		memcpy(datalist.data_core.TEM,recvdata_list.data_core.TEM,3);
 		memcpy(datalist.data_core.HUM,recvdata_list.data_core.HUM,3);
-		memcpy(datalist.data_core.CMD,cmdbuf,3);
-		memcpy(datalist.data_core.Tial,recvdata_list.data_core.Tial,2);
+		memcpy(datalist.data_core.CO2,recvdata_list.data_core.CO2,3);
+		memcpy(datalist.data_core.TVOC,recvdata_list.data_core.TVOC,3);
+		memcpy(datalist.data_core.CMD,recvdata_list.data_core.CMD,3);
+
 		updataNode(fd, datalist.data_buf);
 		}
 	else{
@@ -48,8 +47,9 @@ void Httpdata_process(unsigned char buf[],int len)
 		if(data_len=httpgetdata_length)
 			{
 			//get data 获取单个设备信息
-			memcpy(httpgetdata_list.data_buf,buf,data_len);		
-			getdataNode(httpgetdata_list.data_core.dev_data);
+			memcpy(httpgetdata_list.data_buf,buf,data_len);	
+			unsigned char data_type=httpgetdata_list.data_core.data_type;
+			getdataNode(httpgetdata_list.data_core.dev_data,data_type);
 			}
 		}
 }
@@ -103,6 +103,11 @@ int bytesToInt(unsigned char buf[], int offset)
 		value = (int) ((buf[offset-1] & 0xFF)   
          | ((buf[offset-2] & 0xFF)<<8));
     return value; 
+		}
+	if(offset==2)
+		{
+		value = (int) (buf[offset-1] & 0xFF);
+		return value;
 		}
 
 }
